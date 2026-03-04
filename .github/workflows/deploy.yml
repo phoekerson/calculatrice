@@ -3,7 +3,7 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - main
+      - main  # Déclenche le déploiement à chaque push sur main
 
 jobs:
   deploy:
@@ -26,14 +26,19 @@ jobs:
           npm install
           npm run build
 
-      # 4️⃣ Déployer sur S3
+      # 4️⃣ Installer AWS CLI
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
+
+      # 5️⃣ Déployer sur S3 avec AWS CLI
       - name: Deploy to S3
-        uses: aws-actions/s3-sync@v2
-        with:
-          source-dir: 'dist'                    # dossier build de ton React app
-          bucket: 'g2-calculatrice'            # ton bucket S3
-          delete: true                          # supprime les fichiers obsolètes
+        run: |
+          aws s3 sync dist/ s3://g2-calculatrice --delete --region eu-north-1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'eu-north-1'
+          AWS_DEFAULT_REGION: 'eu-north-1'
