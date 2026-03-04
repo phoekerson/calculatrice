@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Delete, Divide, Minus, Plus, X, Equal, Calculator as CalcIcon, Sun, Moon } from 'lucide-react';
 
 // Import Logic Modules (Group A & B)
