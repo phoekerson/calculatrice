@@ -1,36 +1,39 @@
-name: Deploy React App to EC2
+name: Deploy React App to S3
 
 on:
   push:
     branches:
-      - main
+      - main  # Branche qui déclenche le déploiement
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Cloner le repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Create SSH key file
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-          chmod 400 key.pem
+      # 2️⃣ Installer Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      - name: Debug IP
+      # 3️⃣ Installer les dépendances et build React
+      - name: Install dependencies and build
         run: |
-          echo "IP utilisée : ${{ secrets.EC2_HOST }}"
-          ping -c 2 ${{ secrets.EC2_HOST }}
+          npm install
+          npm run build
 
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/calculatrice/calculatrice
-            git pull origin main
-            npm install
-            npm run build
-            sudo rm -rf /var/www/html/*
-            sudo cp -r dist/* /var/www/html/
-            sudo systemctl restart nginx
-          EOF
+      # 4️⃣ Déployer sur S3
+      - name: Deploy to S3
+        uses: aws-actions/s3-sync@v1
+        with:
+          source-dir: 'dist'                 # dossier build de ton React app
+          destination-bucket: 'g2-calculatrice'  # ton bucket S3
+          delete-removed: true               # supprime les fichiers obsolètes
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'eu-north-1'          # région de ton bucket
