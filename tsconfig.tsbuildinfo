@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/button.tsx","./src/components/calculator.tsx","./src/components/display.tsx","./src/components/graphplotter.tsx","./src/components/historypanel.tsx","./src/logic/operationsa.ts","./src/logic/operationsb.ts","./src/logic/operationsscience.ts"],"version":"5.9.3"}

@@ -1,267 +1,201 @@
 import { useState } from 'react';
-import { Delete, Divide, Minus, Plus, X, Equal, Calculator as CalcIcon, Sun, Moon } from 'lucide-react';
-
-// Import Logic Modules (Group A & B)
+import { Delete, Divide, Minus, Plus, X, Equal, Sun, Moon } from 'lucide-react';
 import { calculateSum, calculateSubtraction } from '../logic/operationsA';
 import { calculateProduct, calculateDivision } from '../logic/operationsB';
-// Import Science Module
-import { calculateSquareRoot, calculatePower, calculateSin, calculateCos, calculateTan, calculateLog, PI } from '../logic/operationsScience';
-
-// Import UI Components (Group C)
+import {
+  calculateSquareRoot,
+  calculatePower,
+  calculateSin,
+  calculateCos,
+  calculateTan,
+  calculateLog,
+  PI,
+} from '../logic/operationsScience';
 import Display from './Display';
 import Button from './Button';
 
 type Operation = '+' | '-' | '*' | '/' | '^' | null;
-type Theme = 'light' | 'dark';
 
-interface CalculatorProps {
-  theme?: Theme;
-  onToggleTheme?: () => void;
+export interface HistoryEntry {
+  expression: string;
+  result: string;
+  timestamp: Date;
 }
 
-export default function Calculator({ theme = 'dark', onToggleTheme }: CalculatorProps) {
-  const isDark = theme === 'dark';
+interface CalculatorProps {
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
+  onAddHistory: (entry: HistoryEntry) => void;
+}
+
+export default function Calculator({ theme, onToggleTheme, onAddHistory }: CalculatorProps) {
   const [currentOperand, setCurrentOperand] = useState('0');
   const [previousOperand, setPreviousOperand] = useState<string | null>(null);
   const [operation, setOperation] = useState<Operation>(null);
   const [overwrite, setOverwrite] = useState(false);
-  const [showScientific, setShowScientific] = useState(false);
+  const [expressionStr, setExpressionStr] = useState('');
+  const [sciMode, setSciMode] = useState(false);
 
   const clear = () => {
     setCurrentOperand('0');
     setPreviousOperand(null);
     setOperation(null);
     setOverwrite(false);
+    setExpressionStr('');
   };
 
   const deleteLast = () => {
-    if (overwrite) {
-      setCurrentOperand('0');
-      setOverwrite(false);
-      return;
-    }
-    if (currentOperand.length === 1) {
-      setCurrentOperand('0');
-      return;
-    }
+    if (overwrite) { setCurrentOperand('0'); setOverwrite(false); return; }
+    if (currentOperand.length === 1) { setCurrentOperand('0'); return; }
     setCurrentOperand(currentOperand.slice(0, -1));
   };
 
   const appendNumber = (number: string) => {
     if (number === '.' && currentOperand.includes('.')) return;
-    
     if (overwrite) {
       setCurrentOperand(number === '.' ? '0.' : number);
       setOverwrite(false);
       return;
     }
-    
     if (currentOperand === '0' && number !== '.') {
       setCurrentOperand(number);
       return;
     }
-    
     setCurrentOperand(currentOperand + number);
   };
 
-  const chooseOperation = (op: Operation) => {
-    if (currentOperand === null) return;
-    
-    if (previousOperand !== null) {
-      const result = evaluate();
-      setPreviousOperand(result);
-      setCurrentOperand(result);
-      setOverwrite(true);
-    } else {
-      setPreviousOperand(currentOperand);
-      setOverwrite(true);
-    }
-    setOperation(op);
-  };
-
-  const handleUnaryScientific = (func: (val: number) => number) => {
-    const current = parseFloat(currentOperand);
-    if (isNaN(current)) return;
-    const result = func(current);
-    setCurrentOperand(result.toString());
-    setOverwrite(true);
-  };
+  const opSymbol = (op: Operation): string =>
+    op === '*' ? '×' : op === '/' ? '÷' : op ?? '';
 
   const evaluate = (): string => {
     const prev = parseFloat(previousOperand || '0');
     const current = parseFloat(currentOperand);
     if (isNaN(prev) || isNaN(current)) return '';
-    
-    let computation = 0;
-    
-    // Dispatch to appropriate logic module
+    let result = 0;
     switch (operation) {
-      case '+':
-        computation = calculateSum(prev, current); // Group A
-        break;
-      case '-':
-        computation = calculateSubtraction(prev, current); // Group A
-        break;
-      case '*':
-        computation = calculateProduct(prev, current); // Group B
-        break;
+      case '+': result = calculateSum(prev, current); break;
+      case '-': result = calculateSubtraction(prev, current); break;
+      case '*': result = calculateProduct(prev, current); break;
       case '/':
-        computation = calculateDivision(prev, current); // Group B
-        break;
-      case '^':
-        computation = calculatePower(prev, current); // Science Module
-        break;
+        if (current === 0) return 'Erreur';
+        result = calculateDivision(prev, current); break;
+      case '^': result = calculatePower(prev, current); break;
     }
-    
-    return computation.toString();
+    return result.toString();
+  };
+
+  const chooseOperation = (op: Operation) => {
+    if (!op) return;
+    if (previousOperand !== null) {
+      const result = evaluate();
+      if (result === 'Erreur') { setCurrentOperand('Erreur'); return; }
+      setExpressionStr(`${result} ${opSymbol(op)}`);
+      setPreviousOperand(result);
+      setCurrentOperand(result);
+    } else {
+      setExpressionStr(`${currentOperand} ${opSymbol(op)}`);
+      setPreviousOperand(currentOperand);
+    }
+    setOverwrite(true);
+    setOperation(op);
   };
 
   const handleEqual = () => {
     if (!operation || !previousOperand) return;
-    
     const result = evaluate();
+    const expr = `${previousOperand} ${opSymbol(operation)} ${currentOperand} =`;
+    setExpressionStr(expr);
     setCurrentOperand(result);
+    onAddHistory({ expression: expr, result, timestamp: new Date() });
     setPreviousOperand(null);
     setOperation(null);
     setOverwrite(true);
   };
 
-  const calcBg = isDark ? 'bg-slate-900' : 'bg-white';
-  const calcBorder = isDark ? 'border-slate-800' : 'border-slate-200';
-  const barBg = isDark ? 'bg-slate-950' : 'bg-slate-100';
-  const barBorder = isDark ? 'border-slate-800' : 'border-slate-200';
-  const barText = isDark ? 'text-slate-500' : 'text-slate-600';
-  const btnToggleBg = isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300';
-  const btnToggleText = isDark ? 'text-indigo-400' : 'text-indigo-600';
-  const gridBg = isDark ? 'bg-slate-800' : 'bg-slate-200';
+  const handleUnary = (fn: (v: number) => number, label: string) => {
+    const val = parseFloat(currentOperand);
+    if (isNaN(val)) return;
+    const result = fn(val);
+    const expr = `${label}(${currentOperand})`;
+    setExpressionStr(`${expr} =`);
+    setCurrentOperand(result.toString());
+    onAddHistory({ expression: `${expr} =`, result: result.toString(), timestamp: new Date() });
+    setOverwrite(true);
+  };
+
+  const isDark = theme === 'dark';
 
   return (
-    <div className={`w-full mx-auto ${calcBg} rounded-3xl shadow-2xl overflow-hidden border ${calcBorder} transition-all duration-300 ${showScientific ? 'max-w-md' : 'max-w-xs'}`}>
-      {/* Group C: Display Component */}
+    <div className="glass-card calc-wrapper animate-in">
+      {/* Display */}
       <Display
-        theme={theme}
         currentOperand={currentOperand}
         previousOperand={previousOperand}
         operation={operation}
+        expression={expressionStr}
       />
 
-      {/* Mode Toggle + Thème */}
-      <div className={`${barBg} px-4 py-2 flex justify-between items-center border-b ${barBorder}`}>
-        <span className={`text-xs ${barText} font-medium uppercase tracking-wider`}>
-          {showScientific ? 'Mode Scientifique' : 'Mode Standard'}
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onToggleTheme?.()}
-            className={`p-2 rounded-full ${btnToggleBg} ${isDark ? 'text-amber-500' : 'text-amber-600'} transition-colors`}
-            title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-          >
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          <button
-            onClick={() => setShowScientific(!showScientific)}
-            className={`p-2 rounded-full ${btnToggleBg} ${btnToggleText} transition-colors`}
-            title="Basculer le mode scientifique"
-          >
-            <CalcIcon size={16} />
-          </button>
-        </div>
+      {/* Mode bar */}
+      <div className="calc-tab-bar">
+        <button
+          className={`calc-tab ${!sciMode ? 'active' : ''}`}
+          onClick={() => setSciMode(false)}
+        >Standard</button>
+        <button
+          className={`calc-tab ${sciMode ? 'active' : ''}`}
+          onClick={() => setSciMode(true)}
+        >Scientifique</button>
+        <button
+          onClick={onToggleTheme}
+          className="calc-tab"
+          title="Changer de thème"
+          style={{ maxWidth: 40 }}
+        >
+          {isDark ? <Sun size={13} /> : <Moon size={13} />}
+        </button>
       </div>
 
-      {/* Group C: Layout & Buttons */}
-      <div className={`grid gap-0.5 ${gridBg} p-0.5 ${showScientific ? 'grid-cols-5' : 'grid-cols-4'}`}>
-        
-        {/* Scientific Column (Only visible in scientific mode) */}
-        {showScientific && (
-          <>
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSquareRoot)} variant="accent" className="text-lg">√</Button>
-            <Button theme={theme} onClick={() => chooseOperation('^')} variant="accent" className="text-lg">xʸ</Button>
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSin)} variant="accent" className="text-lg">sin</Button>
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateCos)} variant="accent" className="text-lg">cos</Button>
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateTan)} variant="accent" className="text-lg">tan</Button>
-          </>
-        )}
+      {/* Scientific row */}
+      {sciMode && (
+        <div className="btn-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+          <Button variant="sci" onClick={() => handleUnary(calculateSquareRoot, '√')}>√</Button>
+          <Button variant="sci" onClick={() => handleUnary(calculateLog, 'log')}>log</Button>
+          <Button variant="sci" onClick={() => handleUnary(calculateSin, 'sin')}>sin</Button>
+          <Button variant="sci" onClick={() => handleUnary(calculateCos, 'cos')}>cos</Button>
+          <Button variant="sci" onClick={() => handleUnary(calculateTan, 'tan')}>tan</Button>
+          <Button variant="sci" onClick={() => chooseOperation('^')}>xʸ</Button>
+          <Button variant="sci" onClick={() => { appendNumber(PI.toString()); }}>π</Button>
+          <Button variant="sci" onClick={() => appendNumber('(')}>( </Button>
+          <Button variant="sci" onClick={() => appendNumber(')')}>)</Button>
+          <Button variant="sci" onClick={() => appendNumber('e')}>e</Button>
+        </div>
+      )}
 
-        {/* Standard Keypad (rearranged slightly for grid flow if needed, but keeping standard layout mostly intact) */}
-        {/* We need to wrap the standard grid to fit alongside scientific or just inject them. 
-            Grid auto-flow is tricky with fixed columns. Let's use a conditional rendering approach for the whole grid 
-            or just insert the scientific buttons in a specific way.
-            
-            Actually, changing grid-cols-5 means we need 5 items per row.
-            Let's redesign the rows for 5 columns when scientific is on.
-        */}
-
-        {showScientific ? (
-          // SCIENTIFIC LAYOUT (5 columns)
-          <>
-            {/* Row 1 */}
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSquareRoot)} variant="accent">√</Button>
-            <Button theme={theme} onClick={clear} variant="secondary">AC</Button>
-            <Button theme={theme} onClick={deleteLast} variant="secondary"><Delete size={20}/></Button>
-            <Button theme={theme} onClick={() => chooseOperation('/')} variant={operation === '/' ? 'primary' : 'accent'}><Divide size={20}/></Button>
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateLog)} variant="accent">log</Button>
-
-            {/* Row 2 */}
-            <Button theme={theme} onClick={() => chooseOperation('^')} variant="accent">xʸ</Button>
-            <Button theme={theme} onClick={() => appendNumber('7')}>7</Button>
-            <Button theme={theme} onClick={() => appendNumber('8')}>8</Button>
-            <Button theme={theme} onClick={() => appendNumber('9')}>9</Button>
-            <Button theme={theme} onClick={() => chooseOperation('*')} variant={operation === '*' ? 'primary' : 'accent'}><X size={20}/></Button>
-
-            {/* Row 3 */}
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSin)} variant="accent">sin</Button>
-            <Button theme={theme} onClick={() => appendNumber('4')}>4</Button>
-            <Button theme={theme} onClick={() => appendNumber('5')}>5</Button>
-            <Button theme={theme} onClick={() => appendNumber('6')}>6</Button>
-            <Button theme={theme} onClick={() => chooseOperation('-')} variant={operation === '-' ? 'primary' : 'accent'}><Minus size={20}/></Button>
-
-            {/* Row 4 */}
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateCos)} variant="accent">cos</Button>
-            <Button theme={theme} onClick={() => appendNumber('1')}>1</Button>
-            <Button theme={theme} onClick={() => appendNumber('2')}>2</Button>
-            <Button theme={theme} onClick={() => appendNumber('3')}>3</Button>
-            <Button theme={theme} onClick={() => chooseOperation('+')} variant={operation === '+' ? 'primary' : 'accent'}><Plus size={20}/></Button>
-
-            {/* Row 5 */}
-            <Button theme={theme} onClick={() => handleUnaryScientific(calculateTan)} variant="accent">tan</Button>
-            <Button theme={theme} onClick={() => appendNumber('0')}>0</Button>
-            <Button theme={theme} onClick={() => appendNumber('.')}>.</Button>
-            <Button theme={theme} onClick={() => appendNumber(PI.toString())} variant="accent">π</Button>
-            <Button theme={theme} onClick={handleEqual} variant="primary"><Equal size={20}/></Button>
-          </>
-        ) : (
-          // STANDARD LAYOUT (4 columns)
-          <>
-            {/* Row 1 */}
-            <Button theme={theme} onClick={clear} variant="secondary" className="col-span-2">AC</Button>
-            <Button theme={theme} onClick={deleteLast} variant="secondary" icon={Delete}>DEL</Button>
-            <Button theme={theme} onClick={() => chooseOperation('/')} variant={operation === '/' ? 'primary' : 'accent'} icon={Divide}>/</Button>
-
-            {/* Row 2 */}
-            <Button theme={theme} onClick={() => appendNumber('7')}>7</Button>
-            <Button theme={theme} onClick={() => appendNumber('8')}>8</Button>
-            <Button theme={theme} onClick={() => appendNumber('9')}>9</Button>
-            <Button theme={theme} onClick={() => chooseOperation('*')} variant={operation === '*' ? 'primary' : 'accent'} icon={X}>*</Button>
-
-            {/* Row 3 */}
-            <Button theme={theme} onClick={() => appendNumber('4')}>4</Button>
-            <Button theme={theme} onClick={() => appendNumber('5')}>5</Button>
-            <Button theme={theme} onClick={() => appendNumber('6')}>6</Button>
-            <Button theme={theme} onClick={() => chooseOperation('-')} variant={operation === '-' ? 'primary' : 'accent'} icon={Minus}>-</Button>
-
-            {/* Row 4 */}
-            <Button theme={theme} onClick={() => appendNumber('1')}>1</Button>
-            <Button theme={theme} onClick={() => appendNumber('2')}>2</Button>
-            <Button theme={theme} onClick={() => appendNumber('3')}>3</Button>
-            <Button theme={theme} onClick={() => chooseOperation('+')} variant={operation === '+' ? 'primary' : 'accent'} icon={Plus}>+</Button>
-
-            {/* Row 5 */}
-            <Button theme={theme} onClick={() => appendNumber('0')} className="col-span-2 rounded-bl-3xl">0</Button>
-            <Button theme={theme} onClick={() => appendNumber('.')}>.</Button>
-            <Button theme={theme} onClick={handleEqual} variant="primary" className="rounded-br-3xl" icon={Equal}>=</Button>
-          </>
-        )}
+      {/* Main grid */}
+      <div className="btn-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        {/* Row 1 */}
+        <Button variant="secondary" onClick={clear} span2>AC</Button>
+        <Button variant="secondary" icon={Delete} onClick={deleteLast}>DEL</Button>
+        <Button variant={operation === '/' ? 'active-op' : 'accent'} icon={Divide} onClick={() => chooseOperation('/')} />
+        {/* Row 2 */}
+        <Button onClick={() => appendNumber('7')}>7</Button>
+        <Button onClick={() => appendNumber('8')}>8</Button>
+        <Button onClick={() => appendNumber('9')}>9</Button>
+        <Button variant={operation === '*' ? 'active-op' : 'accent'} icon={X} onClick={() => chooseOperation('*')} />
+        {/* Row 3 */}
+        <Button onClick={() => appendNumber('4')}>4</Button>
+        <Button onClick={() => appendNumber('5')}>5</Button>
+        <Button onClick={() => appendNumber('6')}>6</Button>
+        <Button variant={operation === '-' ? 'active-op' : 'accent'} icon={Minus} onClick={() => chooseOperation('-')} />
+        {/* Row 4 */}
+        <Button onClick={() => appendNumber('1')}>1</Button>
+        <Button onClick={() => appendNumber('2')}>2</Button>
+        <Button onClick={() => appendNumber('3')}>3</Button>
+        <Button variant={operation === '+' ? 'active-op' : 'accent'} icon={Plus} onClick={() => chooseOperation('+')} />
+        {/* Row 5 */}
+        <Button onClick={() => appendNumber('0')} span2>0</Button>
+        <Button onClick={() => appendNumber('.')}>.</Button>
+        <Button variant="primary" icon={Equal} onClick={handleEqual} />
       </div>
     </div>
   );
