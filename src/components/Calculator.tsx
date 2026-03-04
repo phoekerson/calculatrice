@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Delete, Divide, Minus, Plus, X, Equal, Calculator as CalcIcon } from 'lucide-react';
+import { Delete, Divide, Minus, Plus, X, Equal, Calculator as CalcIcon, Sun, Moon } from 'lucide-react';
 
 // Import Logic Modules (Group A & B)
 import { calculateSum, calculateSubtraction } from '../logic/operationsA';
@@ -12,8 +12,15 @@ import Display from './Display';
 import Button from './Button';
 
 type Operation = '+' | '-' | '*' | '/' | '^' | null;
+type Theme = 'light' | 'dark';
 
-export default function Calculator() {
+interface CalculatorProps {
+  theme?: Theme;
+  onToggleTheme?: () => void;
+}
+
+export default function Calculator({ theme = 'dark', onToggleTheme }: CalculatorProps) {
+  const isDark = theme === 'dark';
   const [currentOperand, setCurrentOperand] = useState('0');
   const [previousOperand, setPreviousOperand] = useState<string | null>(null);
   const [operation, setOperation] = useState<Operation>(null);
@@ -119,40 +126,60 @@ export default function Calculator() {
     setOverwrite(true);
   };
 
+  const calcBg = isDark ? 'bg-slate-900' : 'bg-white';
+  const calcBorder = isDark ? 'border-slate-800' : 'border-slate-200';
+  const barBg = isDark ? 'bg-slate-950' : 'bg-slate-100';
+  const barBorder = isDark ? 'border-slate-800' : 'border-slate-200';
+  const barText = isDark ? 'text-slate-500' : 'text-slate-600';
+  const btnToggleBg = isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300';
+  const btnToggleText = isDark ? 'text-indigo-400' : 'text-indigo-600';
+  const gridBg = isDark ? 'bg-slate-800' : 'bg-slate-200';
+
   return (
-    <div className={`w-full mx-auto bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-800 transition-all duration-300 ${showScientific ? 'max-w-md' : 'max-w-xs'}`}>
+    <div className={`w-full mx-auto ${calcBg} rounded-3xl shadow-2xl overflow-hidden border ${calcBorder} transition-all duration-300 ${showScientific ? 'max-w-md' : 'max-w-xs'}`}>
       {/* Group C: Display Component */}
-      <Display 
-        currentOperand={currentOperand} 
-        previousOperand={previousOperand} 
-        operation={operation} 
+      <Display
+        theme={theme}
+        currentOperand={currentOperand}
+        previousOperand={previousOperand}
+        operation={operation}
       />
 
-      {/* Mode Toggle */}
-      <div className="bg-slate-950 px-4 py-2 flex justify-between items-center border-b border-slate-800">
-        <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+      {/* Mode Toggle + Thème */}
+      <div className={`${barBg} px-4 py-2 flex justify-between items-center border-b ${barBorder}`}>
+        <span className={`text-xs ${barText} font-medium uppercase tracking-wider`}>
           {showScientific ? 'Mode Scientifique' : 'Mode Standard'}
         </span>
-        <button 
-          onClick={() => setShowScientific(!showScientific)}
-          className="p-2 rounded-full bg-slate-800 text-indigo-400 hover:bg-slate-700 transition-colors"
-          title="Basculer le mode scientifique"
-        >
-          <CalcIcon size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onToggleTheme?.()}
+            className={`p-2 rounded-full ${btnToggleBg} ${isDark ? 'text-amber-500' : 'text-amber-600'} transition-colors`}
+            title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            onClick={() => setShowScientific(!showScientific)}
+            className={`p-2 rounded-full ${btnToggleBg} ${btnToggleText} transition-colors`}
+            title="Basculer le mode scientifique"
+          >
+            <CalcIcon size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Group C: Layout & Buttons */}
-      <div className={`grid gap-0.5 bg-slate-800 p-0.5 ${showScientific ? 'grid-cols-5' : 'grid-cols-4'}`}>
+      <div className={`grid gap-0.5 ${gridBg} p-0.5 ${showScientific ? 'grid-cols-5' : 'grid-cols-4'}`}>
         
         {/* Scientific Column (Only visible in scientific mode) */}
         {showScientific && (
           <>
-            <Button onClick={() => handleUnaryScientific(calculateSquareRoot)} variant="accent" className="text-lg">√</Button>
-            <Button onClick={() => chooseOperation('^')} variant="accent" className="text-lg">xʸ</Button>
-            <Button onClick={() => handleUnaryScientific(calculateSin)} variant="accent" className="text-lg">sin</Button>
-            <Button onClick={() => handleUnaryScientific(calculateCos)} variant="accent" className="text-lg">cos</Button>
-            <Button onClick={() => handleUnaryScientific(calculateTan)} variant="accent" className="text-lg">tan</Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSquareRoot)} variant="accent" className="text-lg">√</Button>
+            <Button theme={theme} onClick={() => chooseOperation('^')} variant="accent" className="text-lg">xʸ</Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSin)} variant="accent" className="text-lg">sin</Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateCos)} variant="accent" className="text-lg">cos</Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateTan)} variant="accent" className="text-lg">tan</Button>
           </>
         )}
 
@@ -169,70 +196,70 @@ export default function Calculator() {
           // SCIENTIFIC LAYOUT (5 columns)
           <>
             {/* Row 1 */}
-            <Button onClick={() => handleUnaryScientific(calculateSquareRoot)} variant="accent">√</Button>
-            <Button onClick={clear} variant="secondary">AC</Button>
-            <Button onClick={deleteLast} variant="secondary"><Delete size={20}/></Button>
-            <Button onClick={() => chooseOperation('/')} variant={operation === '/' ? 'primary' : 'accent'}><Divide size={20}/></Button>
-            <Button onClick={() => handleUnaryScientific(calculateLog)} variant="accent">log</Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSquareRoot)} variant="accent">√</Button>
+            <Button theme={theme} onClick={clear} variant="secondary">AC</Button>
+            <Button theme={theme} onClick={deleteLast} variant="secondary"><Delete size={20}/></Button>
+            <Button theme={theme} onClick={() => chooseOperation('/')} variant={operation === '/' ? 'primary' : 'accent'}><Divide size={20}/></Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateLog)} variant="accent">log</Button>
 
             {/* Row 2 */}
-            <Button onClick={() => chooseOperation('^')} variant="accent">xʸ</Button>
-            <Button onClick={() => appendNumber('7')}>7</Button>
-            <Button onClick={() => appendNumber('8')}>8</Button>
-            <Button onClick={() => appendNumber('9')}>9</Button>
-            <Button onClick={() => chooseOperation('*')} variant={operation === '*' ? 'primary' : 'accent'}><X size={20}/></Button>
+            <Button theme={theme} onClick={() => chooseOperation('^')} variant="accent">xʸ</Button>
+            <Button theme={theme} onClick={() => appendNumber('7')}>7</Button>
+            <Button theme={theme} onClick={() => appendNumber('8')}>8</Button>
+            <Button theme={theme} onClick={() => appendNumber('9')}>9</Button>
+            <Button theme={theme} onClick={() => chooseOperation('*')} variant={operation === '*' ? 'primary' : 'accent'}><X size={20}/></Button>
 
             {/* Row 3 */}
-            <Button onClick={() => handleUnaryScientific(calculateSin)} variant="accent">sin</Button>
-            <Button onClick={() => appendNumber('4')}>4</Button>
-            <Button onClick={() => appendNumber('5')}>5</Button>
-            <Button onClick={() => appendNumber('6')}>6</Button>
-            <Button onClick={() => chooseOperation('-')} variant={operation === '-' ? 'primary' : 'accent'}><Minus size={20}/></Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateSin)} variant="accent">sin</Button>
+            <Button theme={theme} onClick={() => appendNumber('4')}>4</Button>
+            <Button theme={theme} onClick={() => appendNumber('5')}>5</Button>
+            <Button theme={theme} onClick={() => appendNumber('6')}>6</Button>
+            <Button theme={theme} onClick={() => chooseOperation('-')} variant={operation === '-' ? 'primary' : 'accent'}><Minus size={20}/></Button>
 
             {/* Row 4 */}
-            <Button onClick={() => handleUnaryScientific(calculateCos)} variant="accent">cos</Button>
-            <Button onClick={() => appendNumber('1')}>1</Button>
-            <Button onClick={() => appendNumber('2')}>2</Button>
-            <Button onClick={() => appendNumber('3')}>3</Button>
-            <Button onClick={() => chooseOperation('+')} variant={operation === '+' ? 'primary' : 'accent'}><Plus size={20}/></Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateCos)} variant="accent">cos</Button>
+            <Button theme={theme} onClick={() => appendNumber('1')}>1</Button>
+            <Button theme={theme} onClick={() => appendNumber('2')}>2</Button>
+            <Button theme={theme} onClick={() => appendNumber('3')}>3</Button>
+            <Button theme={theme} onClick={() => chooseOperation('+')} variant={operation === '+' ? 'primary' : 'accent'}><Plus size={20}/></Button>
 
             {/* Row 5 */}
-            <Button onClick={() => handleUnaryScientific(calculateTan)} variant="accent">tan</Button>
-            <Button onClick={() => appendNumber('0')}>0</Button>
-            <Button onClick={() => appendNumber('.')}>.</Button>
-            <Button onClick={() => appendNumber(PI.toString())} variant="accent">π</Button>
-            <Button onClick={handleEqual} variant="primary"><Equal size={20}/></Button>
+            <Button theme={theme} onClick={() => handleUnaryScientific(calculateTan)} variant="accent">tan</Button>
+            <Button theme={theme} onClick={() => appendNumber('0')}>0</Button>
+            <Button theme={theme} onClick={() => appendNumber('.')}>.</Button>
+            <Button theme={theme} onClick={() => appendNumber(PI.toString())} variant="accent">π</Button>
+            <Button theme={theme} onClick={handleEqual} variant="primary"><Equal size={20}/></Button>
           </>
         ) : (
           // STANDARD LAYOUT (4 columns)
           <>
             {/* Row 1 */}
-            <Button onClick={clear} variant="secondary" className="col-span-2">AC</Button>
-            <Button onClick={deleteLast} variant="secondary" icon={Delete}>DEL</Button>
-            <Button onClick={() => chooseOperation('/')} variant={operation === '/' ? 'primary' : 'accent'} icon={Divide}>/</Button>
+            <Button theme={theme} onClick={clear} variant="secondary" className="col-span-2">AC</Button>
+            <Button theme={theme} onClick={deleteLast} variant="secondary" icon={Delete}>DEL</Button>
+            <Button theme={theme} onClick={() => chooseOperation('/')} variant={operation === '/' ? 'primary' : 'accent'} icon={Divide}>/</Button>
 
             {/* Row 2 */}
-            <Button onClick={() => appendNumber('7')}>7</Button>
-            <Button onClick={() => appendNumber('8')}>8</Button>
-            <Button onClick={() => appendNumber('9')}>9</Button>
-            <Button onClick={() => chooseOperation('*')} variant={operation === '*' ? 'primary' : 'accent'} icon={X}>*</Button>
+            <Button theme={theme} onClick={() => appendNumber('7')}>7</Button>
+            <Button theme={theme} onClick={() => appendNumber('8')}>8</Button>
+            <Button theme={theme} onClick={() => appendNumber('9')}>9</Button>
+            <Button theme={theme} onClick={() => chooseOperation('*')} variant={operation === '*' ? 'primary' : 'accent'} icon={X}>*</Button>
 
             {/* Row 3 */}
-            <Button onClick={() => appendNumber('4')}>4</Button>
-            <Button onClick={() => appendNumber('5')}>5</Button>
-            <Button onClick={() => appendNumber('6')}>6</Button>
-            <Button onClick={() => chooseOperation('-')} variant={operation === '-' ? 'primary' : 'accent'} icon={Minus}>-</Button>
+            <Button theme={theme} onClick={() => appendNumber('4')}>4</Button>
+            <Button theme={theme} onClick={() => appendNumber('5')}>5</Button>
+            <Button theme={theme} onClick={() => appendNumber('6')}>6</Button>
+            <Button theme={theme} onClick={() => chooseOperation('-')} variant={operation === '-' ? 'primary' : 'accent'} icon={Minus}>-</Button>
 
             {/* Row 4 */}
-            <Button onClick={() => appendNumber('1')}>1</Button>
-            <Button onClick={() => appendNumber('2')}>2</Button>
-            <Button onClick={() => appendNumber('3')}>3</Button>
-            <Button onClick={() => chooseOperation('+')} variant={operation === '+' ? 'primary' : 'accent'} icon={Plus}>+</Button>
+            <Button theme={theme} onClick={() => appendNumber('1')}>1</Button>
+            <Button theme={theme} onClick={() => appendNumber('2')}>2</Button>
+            <Button theme={theme} onClick={() => appendNumber('3')}>3</Button>
+            <Button theme={theme} onClick={() => chooseOperation('+')} variant={operation === '+' ? 'primary' : 'accent'} icon={Plus}>+</Button>
 
             {/* Row 5 */}
-            <Button onClick={() => appendNumber('0')} className="col-span-2 rounded-bl-3xl">0</Button>
-            <Button onClick={() => appendNumber('.')}>.</Button>
-            <Button onClick={handleEqual} variant="primary" className="rounded-br-3xl" icon={Equal}>=</Button>
+            <Button theme={theme} onClick={() => appendNumber('0')} className="col-span-2 rounded-bl-3xl">0</Button>
+            <Button theme={theme} onClick={() => appendNumber('.')}>.</Button>
+            <Button theme={theme} onClick={handleEqual} variant="primary" className="rounded-br-3xl" icon={Equal}>=</Button>
           </>
         )}
       </div>
