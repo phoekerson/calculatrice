@@ -3,7 +3,7 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - main  # Branche qui déclenche le déploiement
+      - main
 
 jobs:
   deploy:
@@ -30,10 +30,10 @@ jobs:
       - name: Deploy to S3
         uses: aws-actions/s3-sync@v1
         with:
-          source-dir: 'dist'                 # dossier build de ton React app
-          destination-bucket: 'g2-calculatrice'  # ton bucket S3
-          delete-removed: true               # supprime les fichiers obsolètes
+          source-dir: 'dist'
+          destination-bucket: 'g2-calculatrice'
+          delete-removed: true
         env:
-          AWS_ACCESS_KEY_ID: ${{ AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'eu-north-1'          # région de ton bucket
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'eu-north-1'
