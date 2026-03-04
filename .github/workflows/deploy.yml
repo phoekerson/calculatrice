@@ -3,7 +3,7 @@ name: Deploy React App to S3
 on:
   push:
     branches:
-      - main  # Déclenche le déploiement à chaque push sur main
+      - main
 
 jobs:
   deploy:
@@ -26,15 +26,7 @@ jobs:
           npm install
           npm run build
 
-      # 4️⃣ Installer AWS CLI
-      - name: Install AWS CLI
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-          aws --version
-
-      # 5️⃣ Déployer sur S3 avec AWS CLI
+      # 4️⃣ Déployer sur S3 avec AWS CLI déjà présent
       - name: Deploy to S3
         run: |
           aws s3 sync dist/ s3://g2-calculatrice --delete --region eu-north-1
