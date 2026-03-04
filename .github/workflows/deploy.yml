@@ -28,11 +28,11 @@ jobs:
 
       # 4️⃣ Déployer sur S3
       - name: Deploy to S3
-        uses: aws-actions/s3-sync@v1
+        uses: aws-actions/s3-sync@v2
         with:
-          source-dir: 'dist'
-          destination-bucket: 'g2-calculatrice'
-          delete-removed: true
+          source-dir: 'dist'                    # dossier build de ton React app
+          bucket: 'g2-calculatrice'            # ton bucket S3
+          delete: true                          # supprime les fichiers obsolètes
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
